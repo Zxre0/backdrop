@@ -55,7 +55,7 @@ Backdrop controls the [Wallpaper Engine KDE plugin](https://github.com/catsout/w
 
 > **Note:** the plugin was archived in May 2026. Its author continues the work as [Waywallen](https://github.com/waywallen/waywallen), a standalone wallpaper manager that Backdrop doesn't control. The plugin's last version still builds for Plasma 6, but a future Plasma update could break it.
 
-These steps are for Fedora 44 with [RPM Fusion](https://rpmfusion.org/Configuration) enabled. On Fedora 44 the mpv package is `mpv-devel`, not the `mpv-libs-devel` the plugin's older instructions name.
+These steps are for Fedora 44 with [RPM Fusion](https://rpmfusion.org/Configuration) enabled, and were tested with Plasma 6.7.5 on Wayland. On Fedora 44 the mpv package is `mpv-devel`, not the `mpv-libs-devel` the plugin's older instructions name.
 
 1. Install the build dependencies:
 
@@ -90,7 +90,12 @@ These steps are for Fedora 44 with [RPM Fusion](https://rpmfusion.org/Configurat
 
 Backdrop notices the plugin within a few seconds, with no restart needed. If any screens went black before the plugin was installed, Backdrop's **Use Images** button puts them back on their static image.
 
-To remove the plugin: delete the files listed in `build/install_manifest.txt` (with `sudo`), then run `kpackagetool6 -t Plasma/Wallpaper -r com.github.catsout.wallpaperEngineKde`.
+To remove the plugin, first switch your screens to another wallpaper (Backdrop's **Use Image**), then:
+
+```sh
+sudo rm -r /usr/lib64/qt6/qml/com/github/catsout/wallpaperEngineKde
+kpackagetool6 -t Plasma/Wallpaper -r com.github.catsout.wallpaperEngineKde
+```
 
 ## Appearance
 
