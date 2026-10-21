@@ -23,22 +23,74 @@ Backdrop lets you browse your Wallpaper Engine library and apply wallpapers per 
 
 - KDE Plasma 6 (Wayland or X11)
 - Python 3 with **PySide6 built against your system Qt 6**. Use your distribution's package (Fedora: `python3-pyside6`), not `pip install PySide6`, because the optional `org.goldengate.glass` module is a native Qt plugin and must match the Qt that loads it.
-- The [Wallpaper Engine KDE plugin](https://github.com/catsout/wallpaper-engine-kde-plugin) installed and set as a screen's wallpaper type
+- The [Wallpaper Engine KDE plugin](https://github.com/catsout/wallpaper-engine-kde-plugin), built and installed (see [Installing the plugin](#installing-the-plugin)). Without it Backdrop can't apply wallpapers: a screen switched to a plugin Plasma can't find just shows black.
 - Wallpaper Engine owned on Steam, with its content downloaded (the plugin reads it from your Steam library)
 - Optional: the `org.goldengate.glass` QML module (not yet published). When it's installed (in `~/.local/lib64/qt6/qml`, which the launcher adds to `QML_IMPORT_PATH`), Backdrop uses its controls and theme. Without it, Backdrop runs on simple built-in stand-ins (`fallback/`) with solid panes.
 
-## Install and run
-
-Clone it anywhere, then run it from that folder:
+## Install
 
 ```sh
 git clone https://github.com/NoctoCodes/backdrop
 cd backdrop
-./backdrop          # run it
-./install.sh        # optional: add it to your app menu, with its icon
+./install.sh
 ```
 
-`install.sh` points the menu entry at wherever you cloned the folder. If you move the folder, run it again.
+Backdrop is now in your app menu, and `goldengate-wallpaper` starts it from a terminal. Everything is installed for your user only, so no `sudo` is needed:
+
+| What | Where |
+|---|---|
+| the app | `~/.local/share/goldengate-backdrop/app/` |
+| the command | `~/.local/bin/goldengate-wallpaper` |
+| menu entry and icon | `~/.local/share/applications/`, `~/.local/share/icons/` |
+
+The installer warns you if PySide6 or the Wallpaper Engine plugin is missing. You can delete the clone afterwards.
+
+- **Update:** `git pull`, then `./install.sh` again.
+- **Uninstall:** `./install.sh --uninstall`. Your crash list and option overlays in `~/.local/share/goldengate-backdrop/` are kept; delete that folder to remove them too.
+- **Run without installing:** `./backdrop` from the clone.
+
+## Installing the plugin
+
+Backdrop controls the [Wallpaper Engine KDE plugin](https://github.com/catsout/wallpaper-engine-kde-plugin), which has to be built from source.
+
+> **Note:** the plugin was archived in May 2026. Its author continues the work as [Waywallen](https://github.com/waywallen/waywallen), a standalone wallpaper manager that Backdrop doesn't control. The plugin's last version still builds for Plasma 6, but a future Plasma update could break it.
+
+These steps are for Fedora 44 with [RPM Fusion](https://rpmfusion.org/Configuration) enabled. On Fedora 44 the mpv package is `mpv-devel`, not the `mpv-libs-devel` the plugin's older instructions name.
+
+1. Install the build dependencies:
+
+   ```sh
+   sudo dnf install mpv-devel lz4-devel vulkan-headers plasma-workspace-devel libplasma-devel \
+       kf6-kpackage-devel qt6-qtbase-private-devel qt6-qtdeclarative-devel qt6-qtwebchannel-devel \
+       qt6-qtwebsockets-devel python3-websockets extra-cmake-modules cmake ninja-build gcc-c++
+   ```
+
+2. Get the source, with its scene renderer (a git submodule):
+
+   ```sh
+   git clone https://github.com/catsout/wallpaper-engine-kde-plugin
+   cd wallpaper-engine-kde-plugin
+   git submodule update --init --force --recursive
+   ```
+
+3. Build it, and install it in two parts. The compiled renderer goes into the system Qt folder (`/usr/lib64/qt6/qml`), which needs `sudo`. The wallpaper package goes into your home (`~/.local/share/plasma/wallpapers/`):
+
+   ```sh
+   cmake -B build -S . -GNinja -DUSE_PLASMAPKG=ON
+   cmake --build build
+   sudo cmake --install build
+   cmake --build build --target install_pkg
+   ```
+
+4. Restart Plasma so it picks the plugin up:
+
+   ```sh
+   systemctl --user restart plasma-plasmashell
+   ```
+
+Backdrop notices the plugin within a few seconds, with no restart needed. If any screens went black before the plugin was installed, Backdrop's **Use Images** button puts them back on their static image.
+
+To remove the plugin: delete the files listed in `build/install_manifest.txt` (with `sudo`), then run `kpackagetool6 -t Plasma/Wallpaper -r com.github.catsout.wallpaperEngineKde`.
 
 ## Appearance
 
@@ -81,7 +133,7 @@ Backdrop works with the stock plugin. These changes to the plugin make more of i
 | File | What it is |
 |---|---|
 | `backdrop` | the launcher |
-| `install.sh` | adds the app menu entry and icon |
+| `install.sh` | installs Backdrop for your user (`--uninstall` removes it) |
 | `fallback/` | built-in stand-ins used when `org.goldengate.glass` isn't installed |
 | `wallpaper.py` | the backend: library, settings, options, crash guard, compositor detection |
 | `wepkg.py` | reads Wallpaper Engine `.pkg` files and builds the option overlays |
